@@ -1,0 +1,62 @@
+pipeline {
+   agent any
+   parameters {
+       string(name: 'test', defaultValue:'test', description:"Debug mode [default True] or (N): ")
+       string(name: 'is_debug', defaultValue:'',description:'Debug mode')
+       string(name: 'projectname', defaultValue:'boiler',description:'Project name')
+       string(name: 'urlwebsite', defaultValue:'',description:'Url web site')
+       string(name: 'urlserver', defaultValue:'',description:'Url web server')
+       string(name: 'timezone', defaultValue:'',description:'Time zone')
+       string(name: 'pagination', defaultValue:'',description:'Pagination size')
+       string(name: 'dbhost', defaultValue:'',description:'Database host')
+       string(name: 'dbname', defaultValue:'boiler',description:'Database name')
+       string(name: 'dbuser', defaultValue:'postgres',description:'Database user')
+       string(name: 'dbpassword', defaultValue:'admin',description:'Database password')
+       string(name: 'dbport', defaultValue:'',description:'Database port')
+   }
+   stages {
+       stage('scripts permission') {
+           steps {
+               withEnv(["params=${params}"]){
+                    sh 'chmod +x ./scripts/create-env-vars.sh'
+                    sh 'chmod +x ./scripts/install-reqs.sh'
+                    sh 'chmod +x ./scripts/runtests.sh'
+                }
+           }
+       }
+       stage('create env vars') {
+           steps{
+               withEnv(["params=${params}"]){
+                    sh 'bash ./scripts/create-env-vars.sh'
+                }
+           }
+       }
+       stage('create virtual reqs') {
+           steps{
+               withEnv(["params=${params}"]){
+                    sh 'bash ./scripts/install-reqs.sh'
+                }
+           }
+       }
+       stage('tests') {
+           steps{
+               withEnv(["params=${params}"]){
+                   script {
+                        rc = sh(script:'bash ./scripts/runtests.sh', returnStatus: true)
+                        echo "Result code is ${rc}"
+                        
+                   }                   
+               }
+           }
+           post { 
+                always { 
+                    echo 'I will always say Hello again!'
+                }
+                failure {
+                    echo 'This is failed'
+                }
+            }
+       }
+       
+   }
+}
